@@ -1,6 +1,6 @@
 #pragma once
 
-#include <sys/time.h>
+#include <chrono>
 
 class CTimer
 {
@@ -14,21 +14,24 @@ public:
 	void Start()
 	{
 		m_started = true;
-		m_startTime = now();
+		m_startTime = std::chrono::high_resolution_clock::now();
 	}
 
 	void Stop()
 	{
 		m_started = false;
-		m_accum += now() - m_startTime;
+		timeSpan_t timeSpan = now() - m_startTime;
+		m_accum += timeSpan.count();
 	}
 
 	double Elapsed()
 	{
-		if (m_started)
-			return (m_accum + now() - m_startTime) * 1e-6;
-		else
-			return m_accum * 1e-6;
+		if (m_started) {
+			timeSpan_t timeSpan = now() - m_startTime;
+			return m_accum + timeSpan.count();
+		} else {
+			return m_accum;
+		}
 	}
 
 	double Mrps(unsigned long long r)
@@ -38,13 +41,13 @@ public:
 
 private:
 	bool m_started;
-	unsigned long long m_accum;
-	unsigned long long m_startTime;
+	double m_accum;
+	typedef std::chrono::time_point<std::chrono::high_resolution_clock> timePoint_t;
+	typedef std::chrono::duration<double> timeSpan_t;
+	timePoint_t m_startTime;
 
-	unsigned long long now()
+	static timePoint_t now()
 	{
-		struct timeval tv;
-		gettimeofday(&tv, 0);
-		return ((unsigned long long) tv.tv_sec) * 1000000 + tv.tv_usec;
+		return std::chrono::high_resolution_clock::now();
 	}
 };
